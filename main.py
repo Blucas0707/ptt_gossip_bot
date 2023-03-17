@@ -23,13 +23,8 @@ HEADERS = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-NOW_DT = datetime.now()
+NOW_DT = datetime.now().strftime('%m/%d').lstrip('0')
 PUSH_THRESHOLD = 99
-
-
-def is_post_date_valid(post_date: str) -> bool:
-    now_dt = NOW_DT.strftime('%m/%d').lstrip('0')
-    return post_date == now_dt
 
 
 def get_article_ds(url: str = URL) -> List[dict]:    
@@ -44,7 +39,7 @@ def get_article_ds(url: str = URL) -> List[dict]:
         articles = soup.select('div.r-ent')
         for article in articles:
             post_date = article.select_one('div.date').text.strip()
-            if not is_post_date_valid(post_date):
+            if post_date != NOW_DT:
                 
                 # skip some pinned article in first page
                 to_continue = False if page_count != 1 else True
@@ -126,5 +121,5 @@ def run():
 
 
 if __name__ == '__main__':
-    print(f'Post time is {NOW_DT}')
+    print(f'Get articles posted on {NOW_DT}')
     run()
