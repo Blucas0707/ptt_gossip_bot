@@ -24,7 +24,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 NOW_DT = datetime.now()
-PUSH_THRESHOLD = 50
+PUSH_THRESHOLD = 99
 
 
 def is_post_date_valid(post_date: str) -> bool:
