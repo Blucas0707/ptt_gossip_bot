@@ -1,6 +1,6 @@
 import os
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 
 import openai
@@ -9,30 +9,33 @@ from bs4 import BeautifulSoup
 import telegram
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
+
 OPEN_API_KEY = os.getenv('OPEN_API_KEY')
-URL = 'https://www.ptt.cc/bbs/Gossiping/index.html'
+
+BASE_URL = 'https://www.ptt.cc'
+URL = f'{BASE_URL}/bbs/Gossiping/index.html'
 COOKIE = {'over18': '1'}
 HEADERS = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-END_DT = datetime.now()
-START_DT = END_DT - timedelta(days=1)
-PUSH_THRESHOLD = 99
+NOW_DT = datetime.now()
+PUSH_THRESHOLD = 50
 
 
 def is_post_date_valid(post_date: str) -> bool:
-    start_dt = START_DT.strftime('%m/%d').lstrip('0')
-    end_dt = END_DT.strftime('%m/%d').lstrip('0')
-    
-    return start_dt <= post_date < end_dt
+    now_dt = NOW_DT.strftime('%m/%d').lstrip('0')
+    return post_date == now_dt
 
 
 def get_article_ds(url: str = URL) -> List[dict]:    
     ptt_article_ds = []
     
+    page_count = 1
     to_continue = True
     while to_continue:
         res = requests.get(url, headers=HEADERS, cookies=COOKIE)
@@ -40,12 +43,17 @@ def get_article_ds(url: str = URL) -> List[dict]:
         
         articles = soup.select('div.r-ent')
         for article in articles:
+            post_date = article.select_one('div.date').text.strip()
+            if not is_post_date_valid(post_date):
+                
+                # skip some pinned article in first page
+                to_continue = False if page_count != 1 else True
+                continue
+            
             try:
                 push_count_text = article.select_one('div.nrec span.hl').text
                 push_count = int(push_count_text)
-            except AttributeError:
-                push_count = 0
-            except ValueError:
+            except (AttributeError, ValueError):
                 if push_count_text == '爆':
                     push_count = 100
                 else:
@@ -54,21 +62,12 @@ def get_article_ds(url: str = URL) -> List[dict]:
             if push_count <= PUSH_THRESHOLD:
                 continue
 
-            post_date = article.select_one('div.date').text.strip()
-            if not is_post_date_valid(post_date):
-                if article.select_one('div.mark').text.strip() == 'M':
-                    pass
-                else:
-                    to_continue = False
-                    break
-
             title = article.select_one('div.title a')
-            article_url = 'https://www.ptt.cc' + title['href']
             article_title = title.text
             ptt_article_ds.append(
                 dict(
                     title=article_title,
-                    url=article_url,
+                    url=BASE_URL + title['href'],
                     push_count=push_count,
                     post_date=post_date
                 )
@@ -77,7 +76,8 @@ def get_article_ds(url: str = URL) -> List[dict]:
         next_page_button = soup.select_one('div.btn-group-paging a:nth-of-type(2)')
         if not next_page_button:
             break
-        url = 'https://www.ptt.cc' + next_page_button['href']
+        url = BASE_URL + next_page_button['href']
+        page_count += 1
     
     return ptt_article_ds
 
@@ -100,7 +100,6 @@ def get_summary(content: str) -> str:
 
 
 def get_summarized_article_ds(article_ds: List[dict]) -> List[dict]:
-    total_count = len(article_ds)
     summarized_article_ds = []
 
     for article_d in article_ds:
@@ -127,4 +126,5 @@ def run():
 
 
 if __name__ == '__main__':
+    print(f'Post time is {NOW_DT}')
     run()
