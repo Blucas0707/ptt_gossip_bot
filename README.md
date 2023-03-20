@@ -11,7 +11,7 @@
 1. clone 專案
 2. 安裝套件
 ```
-pip install -r requirement.txt
+pip install -r requirements.txt
 ```
 3. 新增 .env 檔案，複製以下內容，並將以下括號內的 KEY 改為自己的 KEY
 ```
