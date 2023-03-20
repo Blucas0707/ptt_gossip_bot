@@ -13,7 +13,7 @@
 ```
 pip install -r requirement.txt
 ```
-3. 修改 .env 檔案裡頭的 secret key
+3. 新增 .env 檔案，複製以下內容，並將以下括號內的 KEY 改為自己的 KEY
 ```
 OPEN_API_KEY={YOUR_OPEN_API_KEY}
 TELEGRAM_BOT_TOKEN={YOUR_TELEGRAM_BOT_TOKEN}
